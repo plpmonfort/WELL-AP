@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>WELL AP Study</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0d2a30">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WELL AP">
+<meta name="description" content="Interactive WELL AP v2 study companion — concepts, flashcards and practice quiz.">
+
+<style>
+  :root{
+    --ink:#14343b; --ink-soft:#3d5a61; --paper:#f6f9f9; --card:#ffffff;
+    --gray:#58595b; --line:#dde7e8; --gold:#b45309; --gold-bg:#fdf3df;
+    --air:#91cbd3; --water:#3b9db6; --nourish:#0b7b97; --light:#07667f; --move:#144249;
+    --thermal:#23483d; --sound:#2f6b5e; --materials:#40927d; --mind:#63a984; --community:#a7d6ad;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth; background:var(--paper);}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} *{transition:none!important; animation:none!important;} }
+  body{font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif; background:var(--paper); color:var(--ink);
+    line-height:1.5; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+    -webkit-text-size-adjust:100%;}
+  header{padding:18px 16px 6px; max-width:760px; margin:0 auto;}
+  h1{font-size:1.3rem; letter-spacing:.01em;}
+  h1 small{display:block; font-size:.72rem; font-weight:500; color:var(--gray); letter-spacing:.08em; text-transform:uppercase; margin-top:2px;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 16px 80px;}
+
+  /* Countdown / settings strip */
+  .strip{display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; padding:8px 12px; margin-top:12px; font-size:.8rem; color:var(--ink-soft); flex-wrap:wrap;}
+  .strip b{color:var(--ink);}
+  .strip input[type=date]{border:1px solid var(--line); border-radius:7px; padding:4px 7px; font-family:inherit;
+    font-size:.78rem; color:var(--ink); background:var(--paper); margin-left:auto;}
+  .countdown{font-weight:700; color:var(--gold);}
+
+  /* Concept spine — official IWBI blue→green gradient, tappable */
+  .spine{display:flex; gap:2px; margin:12px 0 4px; border-radius:10px; overflow:hidden;}
+  .spine button{flex:1; height:44px; border:none; cursor:pointer; position:relative; transition:flex .25s ease; padding:0;}
+  .spine button span.lbl{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.72rem; color:rgba(255,255,255,.92); font-family:inherit;}
+  .spine button.lt span.lbl{color:var(--ink);}
+  .spine button.active{flex:2.4; outline:3px solid var(--ink); outline-offset:-3px; z-index:1;}
+  .spine button:focus-visible{outline:3px solid var(--gold); outline-offset:-3px; z-index:2;}
+  .spine-label{font-size:.7rem; color:var(--gray); text-align:center; margin-bottom:12px;}
+  .done-dot{position:absolute; top:4px; right:4px; width:8px; height:8px; border-radius:50%; background:#fff; border:1.5px solid var(--ink); display:none;}
+  .spine button.done .done-dot{display:block; background:var(--gold);}
+
+  .modes{display:flex; gap:8px; margin:10px 0 18px;}
+  .modes button{flex:1; padding:10px 4px; border-radius:9px; border:1.5px solid var(--line); background:var(--card);
+    font-weight:600; font-size:.85rem; color:var(--ink-soft); cursor:pointer; font-family:inherit;}
+  .modes button.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .modes button:focus-visible{outline:3px solid var(--gold);}
+
+  .banner{border-radius:14px; padding:16px 18px; margin-bottom:14px; color:#fff;}
+  .banner.lt{color:var(--ink);}
+  .banner .code{font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; opacity:.85;}
+  .banner h2{font-size:1.45rem; margin:2px 0 4px;}
+  .banner p{font-size:.88rem; opacity:.94;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px;}
+  .card h3{font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gray); margin-bottom:8px;}
+  details{border-bottom:1px solid var(--line); padding:8px 0;}
+  details:last-child{border-bottom:none;}
+  summary{cursor:pointer; font-weight:600; font-size:.92rem; list-style:none; display:flex; gap:8px; align-items:baseline;}
+  summary::-webkit-details-marker{display:none;}
+  summary::before{content:"+"; font-weight:700; color:var(--gray); width:14px; flex:none;}
+  details[open] summary::before{content:"–";}
+  summary:focus-visible{outline:3px solid var(--gold); border-radius:4px;}
+  details p{font-size:.87rem; color:var(--ink-soft); padding:6px 0 2px 22px;}
+  .pre-tag{font-size:.6rem; font-weight:700; letter-spacing:.06em; padding:2px 7px; border-radius:20px; background:var(--ink); color:#fff; flex:none;}
+  .opt-tag{background:#e6f0ef; color:var(--sound);}
+
+  .numbers{background:#eef6f6; border:1px solid var(--water); border-radius:12px; padding:13px 16px; margin-bottom:12px;}
+  .numbers h3{color:var(--light); font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px;}
+  .numbers li{font-size:.87rem; margin:5px 0 5px 18px;}
+  .tipbox{background:var(--gold-bg); border:1px solid var(--gold); border-radius:12px; padding:13px 16px; margin-bottom:12px; font-size:.87rem;}
+  .tipbox b{color:var(--gold);}
+
+  .mark-btn{width:100%; padding:12px; border-radius:10px; border:1.5px dashed var(--gray); background:transparent;
+    font-weight:600; font-size:.88rem; color:var(--gray); cursor:pointer; font-family:inherit; margin-top:2px;}
+  .mark-btn.marked{border-style:solid; border-color:var(--gold); color:var(--gold); background:var(--gold-bg);}
+
+  .pager{display:flex; justify-content:space-between; gap:10px; margin-top:14px;}
+  .pager button{padding:11px 16px; border-radius:10px; border:none; background:var(--ink); color:#fff;
+    font-weight:600; cursor:pointer; font-family:inherit; font-size:.85rem; flex:1;}
+  .pager button:disabled{opacity:.3; cursor:default;}
+
+  /* Flashcards */
+  .flash-wrap{perspective:1000px; margin-bottom:12px;}
+  .flash{position:relative; width:100%; min-height:215px; cursor:pointer; transform-style:preserve-3d; transition:transform .45s;}
+  .flash.flipped{transform:rotateY(180deg);}
+  .face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:16px; padding:22px;
+    display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;}
+  .face.front{background:var(--card); border:2px solid var(--line);}
+  .face.back{background:var(--ink); color:#fff; transform:rotateY(180deg);}
+  .face .cat{font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; font-weight:700; margin-bottom:10px; padding:3px 10px; border-radius:20px; color:#fff;}
+  .face .q{font-size:1.03rem; font-weight:600;}
+  .face .a{font-size:.96rem;}
+  .flash-hint{text-align:center; font-size:.73rem; color:var(--gray); margin-bottom:10px;}
+  .flash-controls{display:flex; gap:8px;}
+  .flash-controls button{flex:1; padding:12px; border-radius:10px; border:1.5px solid var(--line); background:var(--card); font-weight:600; cursor:pointer; font-family:inherit; font-size:.86rem; color:var(--ink);}
+  .flash-controls button.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .flash-count{text-align:center; font-size:.78rem; color:var(--gray); margin:8px 0;}
+  select{width:100%; padding:11px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:.88rem; background:var(--card); color:var(--ink); margin-bottom:12px;}
+
+  /* Quiz */
+  .qcard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:12px;}
+  .qcard .qnum{font-size:.7rem; font-weight:700; letter-spacing:.1em; color:var(--gray); text-transform:uppercase;}
+  .qcard .qtext{font-size:1rem; font-weight:600; margin:6px 0 12px;}
+  .choice{display:block; width:100%; text-align:left; padding:12px 13px; margin:7px 0; border-radius:10px;
+    border:1.5px solid var(--line); background:var(--paper); font-family:inherit; font-size:.9rem; cursor:pointer; color:var(--ink);}
+  .choice:focus-visible{outline:3px solid var(--gold);}
+  .choice.correct{background:#e3f2e9; border-color:#2e7d52; font-weight:600;}
+  .choice.wrong{background:#fdecea; border-color:#c0392b;}
+  .explain{font-size:.85rem; color:var(--ink-soft); background:var(--paper); border-radius:10px; padding:10px 12px; margin-top:8px;}
+  .score-pill{display:inline-block; padding:4px 12px; border-radius:20px; background:var(--ink); color:#fff; font-weight:700; font-size:.85rem;}
+  .history{font-size:.8rem; color:var(--ink-soft); margin-top:14px; text-align:left;}
+  .history h4{font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gray); margin-bottom:6px;}
+  .history li{margin:3px 0 3px 16px;}
+  .hidden{display:none;}
+  .footnote{font-size:.7rem; color:var(--gray); margin-top:22px; line-height:1.55;}
+  .footnote button{background:none; border:none; color:var(--gray); text-decoration:underline; font-family:inherit; font-size:.7rem; cursor:pointer; padding:0;}
+</style>
+</head>
+<body>
+<header>
+  <h1>WELL AP Study<small>WELL v2 · 10 concepts · interactive</small></h1>
+</header>
+<div class="wrap">
+
+  <div class="strip">
+    <span id="cd">Set your exam date &rarr;</span>
+    <input type="date" id="examdate" aria-label="Exam date">
+  </div>
+
+  <div class="spine" id="spine" role="tablist" aria-label="WELL concepts"></div>
+  <div class="spine-label">Official IWBI gradient — concepts flow blue &rarr; green in standard order. Tap to jump.</div>
+
+  <div class="modes" role="tablist" aria-label="Study modes">
+    <button id="m-learn" class="active" onclick="setMode('learn')">Learn</button>
+    <button id="m-flash" onclick="setMode('flash')">Flashcards</button>
+    <button id="m-quiz" onclick="setMode('quiz')">Quiz</button>
+  </div>
+
+  <main id="view"></main>
+
+  <p class="footnote">
+    Content reflects WELL v2 (Q4 2020, exam-referenced). WELL is updated by quarterly addenda — verify thresholds
+    against the current digital standard at v2.wellcertified.com before exam day. Concept colors follow IWBI's
+    official palette. Progress is stored on this device only.
+    <br><button onclick="resetAll()">Reset all saved progress</button>
+  </p>
+</div>
+
+<script>
+/* ---------- storage (degrades silently if unavailable) ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('wellap:'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('wellap:'+k, JSON.stringify(v)); }catch(e){} },
+  clear(){ try{ Object.keys(localStorage).filter(k=>k.startsWith('wellap:')).forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+};
+
+const C = [
+ {key:"OVERVIEW", code:"\u2605", color:"#58595b", lt:false, tagline:"How WELL v2 works",
+  intent:"The architecture questions are free points if you know the system cold.",
+  pre:[["Structure","10 concepts + Innovation. Concepts contain features; features contain parts. All applicable parts must be met to earn a feature."],
+       ["Preconditions","Mandatory for EVERY certification level. Miss one = no certification."],
+       ["Optimizations","Optional, weighted points. Flexible pathways per project."]],
+  opt:[["Scoring caps","Max 12 points per concept, 100 points across concepts, +10 Innovation."],
+       ["Minimums","At least 2 points per concept (Air + Thermal Comfort may combine for 4)."],
+       ["Levels","Bronze 40 \u00b7 Silver 50 \u00b7 Gold 60 \u00b7 Platinum 80. All levels require all preconditions."],
+       ["Verification","Documentation review + on-site Performance Verification by a WELL Performance Testing Agent. Certification lasts 3 years."],
+       ["Who's who","IWBI writes the standard \u00b7 GBCI administers certification & the exam \u00b7 Testing Agents verify performance on site."]],
+  nums:["12 / 100 / +10 \u2014 concept cap, total cap, innovation","40 \u00b7 50 \u00b7 60 \u00b7 80 \u2014 Bronze to Platinum","3 years \u2014 certification cycle","~23 preconditions total"],
+  tip:"Memorize the precondition count per concept: Air 4 \u00b7 Water 3 \u00b7 Nourishment 2 \u00b7 Light 2 \u00b7 Movement 2 \u00b7 Thermal 1 \u00b7 Sound 1 \u00b7 Materials 3 \u00b7 Mind 2 \u00b7 Community 3."},
+
+ {key:"AIR", code:"A", color:"#91cbd3", lt:true, tagline:"Clean indoor air across a building's lifetime",
+  intent:"We take ~15,000 breaths a day and spend ~90% of time indoors. Air quality drives asthma, sick building syndrome, and productivity.",
+  pre:[["A01 Air Quality","Meet thresholds for PM2.5/PM10, ozone, CO, formaldehyde, TVOCs, radon \u2014 verified by performance testing."],
+       ["A02 Smoke-Free Environment","Ban indoor smoking & e-cigarettes; restrict outdoor smoking near entrances, operable windows, air intakes; signage."],
+       ["A03 Ventilation Design","Ventilate to ASHRAE 62.1 (or local equivalent) \u2014 mechanical, natural, or mixed-mode."],
+       ["A04 Construction Pollution Management","Protect ducts, control dust, replace filters, manage IAQ during construction and before occupancy."]],
+  opt:[["A05 Enhanced Air Quality","Tighter pollutant thresholds than A01."],
+       ["A06 Enhanced Ventilation","Rates above the 62.1 minimum, or demand-controlled ventilation."],
+       ["A07 Operable Windows","Openable windows + outdoor air-quality data to guide when to open."],
+       ["A08 Air Quality Monitoring & Awareness","Continuous sensors + results displayed to occupants; data reporting."],
+       ["A09\u2013A14","Entryway systems, combustion minimization, source separation (print rooms, janitor closets), MERV-13+ filtration, active air treatment, mold control."]],
+  nums:["PM2.5 \u2264 15 \u00b5g/m\u00b3 \u00b7 PM10 \u2264 50 \u00b5g/m\u00b3","CO \u2264 9 ppm \u00b7 ozone \u2264 51 ppb \u00b7 radon \u2264 4 pCi/L","Smoking setback \u2248 7.5 m (25 ft) from openings","MERV 13 = enhanced filtration anchor"],
+  tip:"Air is performance-tested on site (with Water, Light, Sound, Thermal). Sort features by SOURCE (A02, A10, A11), PATHWAY (A03, A06, A12), AWARENESS (A08)."},
+
+ {key:"WATER", code:"W", color:"#3b9db6", lt:false, tagline:"Quality, availability, moisture management",
+  intent:"Safe great-tasting water, hydration promotion, dry buildings (mold prevention), and Legionella control.",
+  pre:[["W01 Water Quality Indicators","Fundamental thresholds: turbidity + coliforms (performance-verified)."],
+       ["W02 Drinking Water Quality","Limits on dissolved metals (lead, arsenic, copper\u2026), organics, pesticides."],
+       ["W03 Basic Water Management","Legionella management plan + system testing/maintenance."]],
+  opt:[["W04 Enhanced Water Quality","Stricter thresholds; better taste."],
+       ["W05 Water Quality Consistency","Ongoing periodic testing with reporting."],
+       ["W06 Drinking Water Promotion","Dispensers a short walk from everyone; daily cleaning."],
+       ["W07 Moisture Management","Plan for bulk water, condensation, envelope moisture."],
+       ["W08 Hygiene Support","Handwashing: sink size, soap, paper towels; bathroom accommodations."],
+       ["W09 Onsite Non-Potable Water Reuse","Safe treatment/reuse of rain or grey water."]],
+  nums:["Turbidity \u2264 1.0 NTU \u00b7 coliforms: none detected","Lead \u2264 0.01 mg/L (10 ppb) \u2014 favorite exam number","Drinking water within 30 m (100 ft) of occupants","Legionella plan = W03"],
+  tip:"W01 = basic indicators (turbidity/coliforms); W02 = chemical contaminants. Hygiene (W08) and moisture (W07) live in WATER, not Materials \u2014 classic trap."},
+
+ {key:"NOURISHMENT", code:"N", color:"#0b7b97", lt:false, tagline:"Make the healthy choice the easy choice",
+  intent:"Better eating via availability, transparency, and food-environment design. Most requirements apply only when food is sold or provided daily.",
+  pre:[["N01 Fruits & Vegetables","At least 2 fruit + 2 vegetable varieties wherever food is sold/provided."],
+       ["N02 Nutritional Transparency","Display nutrition info (calories, sugars) and label major allergens."]],
+  opt:[["N03 Refined Ingredients","Limit refined grains and added sugars."],
+       ["N04 Food Advertising","Restrict junk-food ads; promote healthy options."],
+       ["N05\u2013N08","Limit artificial ingredients \u00b7 portion guidance \u00b7 nutrition education \u00b7 mindful eating spaces (break areas away from desks)."],
+       ["N09 Special Diets","Accommodate allergies and common restrictions."],
+       ["N10\u2013N13","Food prep support \u00b7 responsible sourcing \u00b7 on-site gardens \u00b7 healthy local food environment."]],
+  nums:["\u201c2 + 2\u201d \u2014 two fruits AND two vegetables (N01)","Major allergens labeled (peanuts, tree nuts, milk, eggs, fish, shellfish, soy, wheat\u2026)","Mindful eating = dedicated space + amenities (N08)"],
+  tip:"If a project never sells or provides food, most Nourishment features are simply not applicable \u2014 know the scoping."},
+
+ {key:"LIGHT", code:"L", color:"#07667f", lt:false, tagline:"Visual comfort + circadian health",
+  intent:"Light drives the ~24h body clock. Poor light/dark patterns disrupt sleep, mood, metabolism \u2014 and glare kills productivity.",
+  pre:[["L01 Light Exposure","Daylight access (window/floor-area ratios or education-plan pathways)."],
+       ["L02 Visual Lighting Design","Adequate work-plane illuminance for tasks and aging eyes."]],
+  opt:[["L03 Circadian Lighting Design","Hit melanopic light (EML) targets at eye level by day."],
+       ["L04 Electric Light Glare Control","Limit glare \u2014 UGR ratings, shielded luminaires."],
+       ["L05 Daylight Design Strategies","Prescriptive: window-to-wall ratios, shading, desks near windows."],
+       ["L06 Daylight Simulation","Performance pathway: sDA / ASE simulation targets."],
+       ["L07 Visual Balance","Consistent color temperature, brightness ratios, flicker limits."],
+       ["L08 Electric Light Quality","Color rendering (CRI/TM-30) and flicker quality."],
+       ["L09 Occupant Lighting Control","Dimming, zoning, task lights."]],
+  nums:["EML / melanopic lux \u2192 circadian, measured VERTICALLY at the eye (L03)","UGR \u2192 glare (L04)","sDA & ASE \u2192 daylight simulation (L06)","Lux on work plane = visual; EML at eye = circadian"],
+  tip:"Metric match-ups are the whole game: UGR\u2192glare, EML\u2192circadian, sDA/ASE\u2192daylight sim, CRI\u2192quality. Light is performance-verified on site."},
+
+ {key:"MOVEMENT", code:"V", color:"#144249", lt:false, tagline:"Design activity back into daily life",
+  intent:"Physical inactivity is a leading global mortality risk. Fight it with active design, ergonomics, and programming.",
+  pre:[["V01 Active Buildings & Communities","Commit to active design \u2014 earn \u22651 point from select Movement features (flexible structure)."],
+       ["V02 Ergonomic Workstation Design","Adjustable seating, monitor height, ergonomics support for everyone. Yes \u2014 a PRECONDITION."]],
+  opt:[["V03 Movement Network & Circulation","Appealing, visible stairs and paths."],
+       ["V04 Facilities for Active Occupants","Showers + lockers + secure bike storage."],
+       ["V05 Site Planning & Selection","Near transit, trails, walkable streets."],
+       ["V06\u2013V08","Activity programs \u00b7 active furnishings (sit-stand desks) \u00b7 dedicated activity spaces & equipment."],
+       ["V09\u2013V11","Promotion & incentives \u00b7 self-monitoring wearables \u00b7 deeper ergonomics programming."]],
+  nums:["Active commuter trio: bikes + showers + lockers (V04)","Sit-stand desks = V07 (Movement, not Mind)","Letter is V \u2014 'moVement' (M is Mind)"],
+  tip:"V02 ergonomics being MANDATORY surprises people. And V01 is uniquely flexible: satisfy it by earning a point from other Movement features."},
+
+ {key:"THERMAL COMFORT", code:"T", color:"#23483d", lt:false, tagline:"Comfort for most, control for the individual",
+  intent:"Thermal comfort is a top satisfaction driver (and complaint). Evidence-based comfort plus personal control.",
+  pre:[["T01 Thermal Performance","Meet ASHRAE 55; mechanically conditioned spaces target PMV limits; monitored & performance-verified. The ONLY precondition."]],
+  opt:[["T02 Enhanced Thermal Performance","Tighter PMV band / measured satisfaction."],
+       ["T03 Thermal Zoning","Smaller zones; free-address so people pick their comfort spot."],
+       ["T04 Individual Thermal Control","Personal fans, heated/cooled chairs, workstation control."],
+       ["T05 Radiant Thermal Comfort","Radiant heating/cooling for large share of space."],
+       ["T06\u2013T09","Continuous monitoring & surveys \u00b7 humidity control (~30\u201360% RH) \u00b7 enhanced operable windows \u00b7 outdoor thermal comfort."]],
+  nums:["ASHRAE 55 + PMV \u2248 \u22120.5 to +0.5 (T01)","Humidity band \u2248 30\u201360% RH (T07)","Personal comfort devices = T04"],
+  tip:"Standards pairing: ASHRAE 55 \u2192 Thermal, ASHRAE 62.1 \u2192 Air. Only ONE precondition here \u2014 easy recall."},
+
+ {key:"SOUND", code:"S", color:"#2f6b5e", lt:false, tagline:"Acoustic comfort by design",
+  intent:"Noise is a top workplace complaint \u2014 it wrecks focus, privacy, and stress levels. WELL plans acoustics zone by zone.",
+  pre:[["S01 Sound Mapping","Acoustic plan: label loud/quiet zones, identify noise sources, plan adjacencies. A plan, not a measurement."]],
+  opt:[["S02 Maximum Noise Levels","Background-noise limits (dBA / NC) by space type \u2014 performance-verified."],
+       ["S03 Sound Barriers","STC-rated partitions, sealed penetrations, door isolation."],
+       ["S04 Reverberation Time","RT60 limits by room type."],
+       ["S05 Sound Reducing Surfaces","NRC-rated absorptive ceilings/panels."],
+       ["S06 Minimum Background Sound","Sound masking to protect speech privacy \u2014 adding sound on purpose."],
+       ["S07 Impact Noise Management","Control footfall/structural impact noise."]],
+  nums:["dBA/NC \u2192 levels (S02) \u00b7 STC \u2192 barriers (S03)","RT60 \u2192 reverberation (S04) \u00b7 NRC \u2192 absorption (S05)","Sound masking = ADD sound (S06) \u2014 counterintuitive"],
+  tip:"Sound questions are acronym match-ups. One flashcard per metric = free points."},
+
+ {key:"MATERIALS", code:"X", color:"#40927d", lt:false, tagline:"Reduce exposure to hazardous ingredients",
+  intent:"Cut exposure to legacy hazards (asbestos, lead, PCBs, mercury) and new-material emissions (VOCs); promote ingredient transparency.",
+  pre:[["X01 Material Restrictions","Restrict asbestos, mercury, lead in newly installed materials."],
+       ["X02 Interior Hazardous Materials Management","Manage/abate in-place asbestos, lead paint, PCBs in existing buildings."],
+       ["X03 CCA & Lead Management","Manage lead hazards + CCA-treated wood outdoors/playgrounds."]],
+  opt:[["X04 Site Remediation","Assess & remediate contaminated (brownfield) sites."],
+       ["X05 Enhanced Material Restrictions","Beyond X01: flame retardants, phthalates, etc."],
+       ["X06 VOC Restrictions","Low-VOC paints, adhesives, flooring, furniture (CDPH method)."],
+       ["X07 Materials Transparency","Ingredient disclosure: Declare labels, HPDs."],
+       ["X08 Materials Optimization","Verified safer products: Cradle to Cradle, GreenScreen."],
+       ["X09\u2013X12","Waste management \u00b7 integrated pest management \u00b7 safer cleaning products & protocols \u00b7 contact reduction (touchless fixtures)."]],
+  nums:["Legacy trio: asbestos + lead + mercury (+PCBs existing)","Transparency = Declare/HPD (X07); Optimization = C2C/GreenScreen (X08)","Low-VOC protocol anchor: CDPH (X06)","Cleaning products & pest management live HERE"],
+  tip:"Transparency (X07) = disclosing what's inside. Optimization (X08) = proving it's safer. Different features, commonly confused."},
+
+ {key:"MIND", code:"M", color:"#63a984", lt:true, tagline:"Mental health support + restorative design",
+  intent:"Support cognitive and emotional health through policy (support, stress management) and design (nature, restorative spaces).",
+  pre:[["M01 Mental Health Promotion","Commit to promotion: education, awareness, supportive culture."],
+       ["M02 Nature & Place","Biophilic design + celebration of place: natural elements, views, art, delight. Nature is MANDATORY."]],
+  opt:[["M03 Mental Health Support","Services/coverage, screenings, EAPs."],
+       ["M04 Mental Health Education","Literacy training for staff and managers."],
+       ["M05 Stress Support","Stress programs + workplace stress assessment."],
+       ["M06\u2013M08","Restorative OPPORTUNITIES (break/nap policy) \u2192 SPACES (quiet rooms) \u2192 PROGRAMMING (mindfulness offerings)."],
+       ["M09 Enhanced Access to Nature","More direct nature indoors + outdoors."],
+       ["M10\u2013M11","Tobacco prevention & cessation \u00b7 substance use education & services."]],
+  nums:["Biophilia = precondition (M02)","Restorative trio: policy \u2192 design \u2192 activities = M06/M07/M08","Cessation = Mind (M10); smoke-free = Air (A02)"],
+  tip:"MIND is M, MOVEMENT is V. Banning smoke = Air; helping quit = Mind. This trap shows up constantly."},
+
+ {key:"COMMUNITY", code:"C", color:"#a7d6ad", lt:true, tagline:"Inclusion, engagement, social health",
+  intent:"An inclusive, engaged community: health promotion, stakeholder process, emergency readiness, family support, equity.",
+  pre:[["C01 Health & Well-Being Promotion","WELL feature guide + health education for occupants."],
+       ["C02 Integrative Design","Early all-stakeholder charrette, health goals, ongoing coordination \u2014 WELL's 'process' feature."],
+       ["C03 Emergency Preparedness","Preparedness plan: resilience, drills, communication, continuity."]],
+  opt:[["C04\u2013C05 Occupant Surveys","Collect experience data at intervals; enhanced = deeper instruments + acting on results."],
+       ["C06 Health Services & Benefits","Insurance, preventive care, sick leave."],
+       ["C07\u2013C10 Family cluster","Parental leave \u00b7 lactation rooms (private, not a bathroom; fridge, sink, outlet) \u00b7 childcare support."],
+       ["C11 Civic Engagement","Volunteering, voting time, participation."],
+       ["C12\u2013C13 Equity cluster","Diversity & inclusion policies; accessibility + universal design beyond code."]],
+  nums:["C02 = charrette + health goals from day one","Lactation room checklist: private, not a bathroom, fridge/sink/outlet","Surveys drive continuous improvement \u2014 WELL is a 3-year cycle, not a plaque"],
+  tip:"HR-style benefits (leave, childcare, DEI, insurance) = almost always a C feature."},
+
+ {key:"INNOVATION", code:"I", color:"#58595b", lt:false, tagline:"Beyond the standard (+10 points)",
+  intent:"Up to 10 bonus points on top of the 100-point cap.",
+  pre:[],
+  opt:[["I01 Innovate WELL","Novel health strategies, or extra parts beyond a concept's 12-point cap."],
+       ["I02 WELL AP","A WELL AP on the team earns the project a point \u2014 that's you!"],
+       ["I03 Experience WELL","Educate occupants/visitors about the project's WELL features."],
+       ["I04 Green Building Rating Systems","Points for LEED, BREEAM, Green Star alongside WELL."],
+       ["I05 Health Equity","Strategies advancing equity and community benefit."]],
+  nums:["+10 innovation points max","Your credential = I02"],
+  tip:"Innovation questions are rare but easy \u2014 know I02 exists."}
+];
+
+const QUIZ = [
+ ["A project bans indoor smoking. Which concept?",["Air","Mind","Community","Materials"],0,"A02 Smoke-Free Environment is an AIR precondition. Helping people QUIT is Mind (M10)."],
+ ["Tobacco cessation programs belong to\u2026",["Air","Mind","Nourishment","Community"],1,"M10 in Mind. Banning smoke = Air; supporting quitting = Mind."],
+ ["ASHRAE 62.1 pairs with which concept?",["Thermal Comfort","Air","Sound","Light"],1,"62.1 = ventilation = Air (A03). ASHRAE 55 = Thermal Comfort."],
+ ["ASHRAE 55 pairs with which concept?",["Air","Light","Thermal Comfort","Movement"],2,"55 = thermal environment = T01."],
+ ["EML (melanopic lux) measures\u2026",["Glare","Circadian light at the eye","Daylight autonomy","Color rendering"],1,"EML \u2192 circadian lighting (L03), measured vertically at eye level."],
+ ["UGR is the metric for\u2026",["Reverberation","Glare","Absorption","Sound isolation"],1,"Unified Glare Rating \u2192 L04."],
+ ["STC ratings relate to\u2026",["Sound barriers","Background noise","Reverberation","Absorption"],0,"STC \u2192 S03 Sound Barriers. NRC \u2192 absorption, RT60 \u2192 reverberation, dBA/NC \u2192 levels."],
+ ["Sound masking (adding background sound) is\u2026",["S02","S04","S06","S07"],2,"S06 Minimum Background Sound \u2014 raising the floor to protect speech privacy."],
+ ["Ergonomic workstations in WELL v2 are\u2026",["An optimization","A precondition","Innovation","Not covered"],1,"V02 is a Movement PRECONDITION \u2014 mandatory."],
+ ["Sit-stand desks earn points under\u2026",["Mind","Movement","Thermal Comfort","Community"],1,"V07 Active Furnishings, in Movement."],
+ ["Hygiene support (handwashing) lives in\u2026",["Materials","Water","Community","Air"],1,"W08 \u2014 in WATER. A classic trap."],
+ ["Max points per concept?",["10","12","15","20"],1,"12 per concept, 100 total, +10 innovation."],
+ ["Points needed for WELL Platinum?",["60","70","80","90"],2,"Bronze 40, Silver 50, Gold 60, Platinum 80."],
+ ["How long is WELL certification valid?",["1 year","3 years","5 years","Permanent"],1,"3 years, then recertification \u2014 WELL is ongoing."],
+ ["Who administers WELL certification & the exam?",["IWBI","GBCI","ASHRAE","USGBC"],1,"IWBI writes the standard; GBCI administers certification and the exam."],
+ ["Which concepts are performance-tested on site?",["All ten","Air, Water, Light, Sound, Thermal","Air and Water only","Mind and Community"],1,"The measurable-environment five. Others lean on documents and policies."],
+ ["Lead limit in drinking water (W02)?",["0.1 mg/L","0.01 mg/L","1.0 mg/L","0.001 mg/L"],1,"0.01 mg/L = 10 ppb."],
+ ["N01 requires at least\u2026",["1 fruit or vegetable","2 fruits + 2 vegetables","5 servings daily","A salad bar"],1,"The '2+2' rule, wherever food is sold or provided."],
+ ["Legionella management plan is\u2026",["W01","W02","W03","W07"],2,"W03 Basic Water Management."],
+ ["Biophilic design (nature access) in Mind is\u2026",["Optional","A precondition","Innovation only","Removed in v2"],1,"M02 Nature & Place is mandatory."],
+ ["Declare labels and HPDs earn points under\u2026",["X06","X07","X08","X04"],1,"X07 Materials Transparency. X08 = optimization (C2C, GreenScreen)."],
+ ["Cleaning products & protocols belong to\u2026",["Water","Air","Materials","Community"],2,"X11 \u2014 in Materials, with pest management."],
+ ["Lactation room requirements appear in\u2026",["Mind","Water","Community","Nourishment"],2,"Family-support cluster in Community."],
+ ["The integrative design charrette is\u2026",["C02 precondition","C06 optimization","M01","I01"],0,"C02 \u2014 mandatory stakeholder process from day one."],
+ ["sDA and ASE are metrics in\u2026",["L03","L06","L04","A08"],1,"L06 Daylight Simulation."],
+ ["PMV target range in T01 is about\u2026",["\u00b10.2","\u00b10.5","\u00b11.0","\u00b12.0"],1,"\u22120.5 to +0.5 per ASHRAE 55."],
+ ["Minimum points per concept (most concepts)?",["0","1","2","4"],2,"2 per concept; Air + Thermal may combine for 4."],
+ ["The Movement concept letter code is\u2026",["M","V","F","P"],1,"V ('moVement'). M is Mind."],
+ ["A WELL AP on the project team earns\u2026",["Nothing","An Innovation point (I02)","2 Air points","Faster review"],1,"I02 \u2014 your credential is worth a point."],
+ ["Smoking setback distance from entrances is about\u2026",["3 m","7.5 m (25 ft)","15 m","30 m"],1,"A02 anchor number."]
+];
+
+/* ---------- state (restored from storage) ---------- */
+let concept = 0, mode = 'learn';
+let reviewed = new Set(store.get('reviewed', []));
+let attempts = store.get('attempts', []);
+let flashDeck = [], flashIdx = 0, flashFilter = 'all';
+let quizIdx = 0, quizScore = 0, quizAnswered = false;
+
+/* ---------- exam countdown ---------- */
+function renderCountdown(){
+  const el = document.getElementById('cd');
+  const input = document.getElementById('examdate');
+  const d = store.get('examDate', '');
+  if(d) input.value = d;
+  if(!d){ el.innerHTML = 'Set your exam date &rarr;'; return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d + 'T00:00:00');
+  const days = Math.round((target - today) / 86400000);
+  if(days > 0) el.innerHTML = '<span class="countdown">' + days + ' days</span> until your exam \u00b7 <b>' + reviewed.size + '/' + C.length + '</b> sections reviewed';
+  else if(days === 0) el.innerHTML = '<span class="countdown">Exam is today.</span> Good luck.';
+  else el.innerHTML = '<b>' + reviewed.size + '/' + C.length + '</b> sections reviewed';
+}
+document.getElementById('examdate').addEventListener('change', function(){
+  store.set('examDate', this.value); renderCountdown();
+});
+
+function resetAll(){
+  if(!confirm('Clear reviewed sections, quiz history and exam date on this device?')) return;
+  store.clear(); reviewed = new Set(); attempts = [];
+  document.getElementById('examdate').value = '';
+  render(); renderCountdown();
+}
+
+/* ---------- flashcards ---------- */
+function buildFlash(filter){
+  const deck = [];
+  C.forEach((c, ci) => {
+    if(filter !== 'all' && +filter !== ci) return;
+    if(c.pre.length) deck.push({c:c.key, col:c.color, lt:c.lt, q:'Name the precondition(s) of ' + c.key, a:c.pre.map(p=>p[0]).join(' \u00b7 ')});
+    c.nums.forEach(n => {
+      const parts = n.split('\u2014');
+      if(parts.length === 2) deck.push({c:c.key, col:c.color, lt:c.lt, q:parts[1].trim() + '?', a:parts[0].trim()});
+      else deck.push({c:c.key, col:c.color, lt:c.lt, q:'Key fact (' + c.key + '):', a:n});
+    });
+  });
+  for(let i = deck.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  return deck;
+}
+
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.modes button').forEach(b => b.classList.remove('active'));
+  document.getElementById('m-' + m).classList.add('active');
+  if(m === 'flash'){ flashDeck = buildFlash(flashFilter); flashIdx = 0; }
+  if(m === 'quiz'){ quizIdx = 0; quizScore = 0; quizAnswered = false; }
+  render();
+}
+
+function setConcept(i){
+  concept = i;
+  if(mode !== 'learn') setMode('learn'); else render();
+  window.scrollTo({top:0});
+}
+
+function toggleReviewed(){
+  reviewed.has(concept) ? reviewed.delete(concept) : reviewed.add(concept);
+  store.set('reviewed', Array.from(reviewed));
+  render(); renderCountdown();
+}
+
+function renderSpine(){
+  const s = document.getElementById('spine'); s.innerHTML = '';
+  C.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.style.background = c.color;
+    b.setAttribute('role','tab'); b.setAttribute('aria-label', c.key);
+    if(c.lt) b.classList.add('lt');
+    if(i === concept && mode === 'learn') b.classList.add('active');
+    if(reviewed.has(i)) b.classList.add('done');
+    b.innerHTML = '<span class="lbl">' + c.code + '</span><span class="done-dot"></span>';
+    b.onclick = () => setConcept(i);
+    s.appendChild(b);
+  });
+}
+
+function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function renderLearn(){
+  const c = C[concept];
+  let h = '<div class="banner ' + (c.lt?'lt':'') + '" style="background:' + c.color + '">' +
+    '<div class="code">' + c.code + ' features</div><h2>' + c.key + '</h2><p>' + esc(c.tagline) + '</p></div>' +
+    '<div class="card"><p style="font-size:.92rem"><b>Why it matters:</b> ' + esc(c.intent) + '</p></div>';
+  if(c.pre.length){
+    h += '<div class="card"><h3>Preconditions \u2014 mandatory</h3>';
+    c.pre.forEach(p => h += '<details><summary><span class="pre-tag">MUST</span>' + esc(p[0]) + '</summary><p>' + esc(p[1]) + '</p></details>');
+    h += '</div>';
+  }
+  h += '<div class="card"><h3>' + (c.pre.length ? 'Key optimizations \u2014 points' : 'Features') + '</h3>';
+  c.opt.forEach(p => h += '<details><summary><span class="pre-tag opt-tag">PTS</span>' + esc(p[0]) + '</summary><p>' + esc(p[1]) + '</p></details>');
+  h += '</div><div class="numbers"><h3>Numbers &amp; anchors</h3><ul>';
+  c.nums.forEach(n => h += '<li>' + esc(n) + '</li>');
+  h += '</ul></div><div class="tipbox"><b>\u2605 Exam tip:</b> ' + esc(c.tip) + '</div>';
+  h += '<button class="mark-btn ' + (reviewed.has(concept)?'marked':'') + '" onclick="toggleReviewed()">' +
+       (reviewed.has(concept) ? '\u2713 Reviewed \u2014 tap to unmark' : 'Mark as reviewed') + '</button>';
+  h += '<div class="pager">' +
+    '<button onclick="setConcept(' + (concept-1) + ')" ' + (concept===0?'disabled':'') + '>\u2190 ' + (concept>0?C[concept-1].key:'') + '</button>' +
+    '<button onclick="setConcept(' + (concept+1) + ')" ' + (concept===C.length-1?'disabled':'') + '>' + (concept<C.length-1?C[concept+1].key:'') + ' \u2192</button></div>';
+  return h;
+}
+
+function flipCard(){ document.getElementById('flash').classList.toggle('flipped'); }
+function nextCard(d){ flashIdx = (flashIdx + d + flashDeck.length) % flashDeck.length; render(); }
+function filterFlash(v){ flashFilter = v; flashDeck = buildFlash(v); flashIdx = 0; render(); }
+
+function renderFlash(){
+  if(!flashDeck.length) flashDeck = buildFlash(flashFilter);
+  const f = flashDeck[flashIdx];
+  let sel = '<select onchange="filterFlash(this.value)" aria-label="Filter flashcards">' +
+    '<option value="all"' + (flashFilter==='all'?' selected':'') + '>All concepts (' + flashDeck.length + ' cards, shuffled)</option>';
+  C.forEach((c, i) => sel += '<option value="' + i + '"' + (flashFilter==String(i)?' selected':'') + '>' + c.key + ' only</option>');
+  sel += '</select>';
+  return sel +
+    '<div class="flash-hint">Tap the card to flip \u00b7 answer out loud before revealing</div>' +
+    '<div class="flash-wrap"><div class="flash" id="flash" onclick="flipCard()" role="button" tabindex="0" aria-label="Flashcard, tap to flip" ' +
+    'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();flipCard();}">' +
+    '<div class="face front"><span class="cat" style="background:' + f.col + ';' + (f.lt?'color:var(--ink);':'') + '">' + f.c + '</span>' +
+    '<div class="q">' + esc(f.q) + '</div></div>' +
+    '<div class="face back"><div class="a">' + esc(f.a) + '</div></div></div></div>' +
+    '<div class="flash-count">Card ' + (flashIdx+1) + ' of ' + flashDeck.length + '</div>' +
+    '<div class="flash-controls"><button onclick="nextCard(-1)">\u2190 Back</button>' +
+    '<button class="primary" onclick="nextCard(1)">Next card \u2192</button></div>';
+}
+
+function answer(i){
+  if(quizAnswered) return;
+  quizAnswered = true;
+  const q = QUIZ[quizIdx];
+  if(i === q[2]) quizScore++;
+  document.querySelectorAll('.choice').forEach((b, bi) => {
+    if(bi === q[2]) b.classList.add('correct');
+    else if(bi === i) b.classList.add('wrong');
+    b.disabled = true;
+  });
+  document.getElementById('explain').classList.remove('hidden');
+  document.getElementById('nextq').classList.remove('hidden');
+}
+function nextQ(){
+  quizIdx++;
+  quizAnswered = false;
+  if(quizIdx >= QUIZ.length){
+    attempts.push({d:new Date().toISOString().slice(0,10), s:quizScore, t:QUIZ.length});
+    attempts = attempts.slice(-10);
+    store.set('attempts', attempts);
+  }
+  render(); window.scrollTo({top:0});
+}
+function restartQuiz(){ quizIdx = 0; quizScore = 0; quizAnswered = false; render(); }
+
+function renderQuiz(){
+  if(quizIdx >= QUIZ.length){
+    const pct = Math.round(quizScore / QUIZ.length * 100);
+    const msg = pct >= 85 ? 'Exam-ready territory. Keep the traps sharp.'
+              : pct >= 65 ? 'Solid \u2014 revisit the concepts you missed.'
+              : 'Good start \u2014 cycle back through Learn mode, then retry.';
+    let hist = '';
+    if(attempts.length > 1){
+      hist = '<div class="history"><h4>Recent attempts</h4><ul>' +
+        attempts.slice().reverse().map(a => '<li>' + a.d + ' \u2014 ' + a.s + '/' + a.t + ' (' + Math.round(a.s/a.t*100) + '%)</li>').join('') +
+        '</ul></div>';
+    }
+    return '<div class="qcard" style="text-align:center"><div class="qnum">Quiz complete</div>' +
+      '<h2 style="margin:10px 0">' + quizScore + ' / ' + QUIZ.length + '</h2>' +
+      '<span class="score-pill">' + pct + '%</span>' +
+      '<p style="margin-top:12px;font-size:.9rem">' + msg + '</p>' +
+      '<button class="choice" onclick="restartQuiz()" style="text-align:center;font-weight:600;margin-top:10px">Take it again</button>' +
+      hist + '</div>';
+  }
+  const q = QUIZ[quizIdx];
+  let h = '<div class="qcard"><div class="qnum">Question ' + (quizIdx+1) + ' of ' + QUIZ.length + ' \u00b7 score ' + quizScore + '</div>' +
+    '<div class="qtext">' + esc(q[0]) + '</div>';
+  q[1].forEach((c, i) => h += '<button class="choice" onclick="answer(' + i + ')">' + esc(c) + '</button>');
+  h += '<div id="explain" class="explain hidden">' + esc(q[3]) + '</div>' +
+    '<button id="nextq" class="choice hidden" onclick="nextQ()" style="text-align:center;font-weight:600;background:var(--ink);color:#fff;border-color:var(--ink)">' +
+    (quizIdx === QUIZ.length - 1 ? 'See results \u2192' : 'Next question \u2192') + '</button></div>';
+  return h;
+}
+
+function render(){
+  renderSpine();
+  document.getElementById('view').innerHTML =
+    mode === 'learn' ? renderLearn() : mode === 'flash' ? renderFlash() : renderQuiz();
+}
+
+render();
+renderCountdown();
+
+/* ---------- service worker (offline support) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
